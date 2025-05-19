@@ -3,7 +3,7 @@ import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
-import { FixedSizeList as List, ListChildComponentProps } from "react-window";
+import { FixedSizeList as List, ListChildComponentProps } from "react-window"
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
