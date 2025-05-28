@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Radio, Input, Button, Upload, Progress, Flex, Tabs, Table, Select } from "antd";
+import { Radio, Input, Button, Upload, Progress, Flex, Tabs, Table, Select, Tag } from "antd";
 import { SaveOutlined, SearchOutlined } from "@ant-design/icons";
 import * as XLSX from 'xlsx';
 
@@ -26,8 +26,12 @@ const UploadData = () => {
     const [selectedSheet, setSelectedSheet] = useState<string | undefined>(undefined);
     const [nameOfNameDatabase, setNameOfNameDatabase] = useState<string | undefined>(undefined);
     const [nameOfNameFile, setNameOfNameFile] = useState<string | undefined>(undefined);
-    const currentDataSource = excelSheetsData.find(sheet => sheet.sheetName === selectedSheet)
     const [showDatabasePreview, setShowDatabasePreview] = useState<boolean>(false);
+    const [createdSheet, setCreatedSheet] = useState<string | undefined>(undefined);
+    const [createdTableName, setCreatedTableName] = useState<string | undefined>(undefined);
+    const [createdTables, setCreatedTables] = useState<{ sheetName: string, tableName: string }[]>([]);
+    const [activeTableIndex, setActiveTableIndex] = useState<number | null>(null);
+    const currentDataSource = excelSheetsData.find(sheet => sheet.sheetName === selectedSheet)
 
     const handleCategoryChange = (e: any) => {
         setCategory(Number(e.target.value));
@@ -38,6 +42,13 @@ const UploadData = () => {
         setUploadSuccess(false);
         setUploading(false);
         setProgress(0);
+        setShowDatabasePreview(false);
+        setSelectedSheet(undefined);
+        setNameOfNameDatabase(undefined);
+        setCreatedSheet(undefined);
+        setCreatedTableName(undefined);
+        setCreatedTables([]);
+        setActiveTableIndex(null);
     };
 
     const processExcelFile = (file: File) => {
@@ -48,6 +59,12 @@ const UploadData = () => {
         setExcelSheetsData([]);
         setActiveSheetKey(undefined);
         setShowDatabasePreview(false);
+        setSelectedSheet(undefined);
+        setNameOfNameDatabase(undefined);
+        setCreatedSheet(undefined);
+        setCreatedTableName(undefined);
+        setCreatedTables([]);
+        setActiveTableIndex(null);
 
         const reader = new FileReader();
         reader.onprogress = (event) => {
@@ -126,15 +143,26 @@ const UploadData = () => {
     };
 
     const handleCreateBtnClick = () => {
-        console.log("Create clicked");
-        setShowDatabasePreview(true);
+        if (!selectedSheet || !nameOfNameDatabase) return;
+        // Prevent duplicate table names across all created tables
+        const exists = createdTables.some(
+            t => t.tableName === nameOfNameDatabase
+        );
+        if (!exists) {
+            setCreatedTables(prev => [...prev, { sheetName: selectedSheet, tableName: nameOfNameDatabase! }]);
+            setActiveTableIndex(createdTables.length); // set to new table
+            setShowDatabasePreview(true);
+        } else {
+            // Optionally, show a warning or just do nothing
+            // For now, do nothing if duplicate
+        }
     };
 
     const renderPreview = () => {
         if (!uploadSuccess || excelSheetsData.length === 0) {
             return (
                 <Flex gap={8} vertical align="center" justify="center" className="empty-file-message">
-                    {/* <img src={EmptyFileIllustration} alt="Empty file" /> */}
+                    <img src="" alt="replace image" />
                     <p>No file selected yet or failed to load preview. Please select a file to upload it.</p>
                 </Flex>
             );
@@ -167,7 +195,7 @@ const UploadData = () => {
                 </Tabs>)
                     :
                     (
-                        currentDataSource && nameOfNameDatabase && category === CategoryType.Database && showDatabasePreview &&
+                        currentDataSource && nameOfNameDatabase && category === CategoryType.Database &&
                         <Table
                             columns={currentDataSource.columns}
                             dataSource={currentDataSource.dataSource}
@@ -203,7 +231,7 @@ const UploadData = () => {
                             icon={<SaveOutlined />}
                             onClick={handleSaveBtnClick}
                             size="large">
-                              Save
+                            Save
                             {/* {t('common.label.save')} */}
                         </Button>
                     }
@@ -267,7 +295,12 @@ const UploadData = () => {
                                         placeholder="Select a sheet"
                                         style={{ width: "238px" }}
                                         value={selectedSheet}
-                                        onChange={setSelectedSheet}
+                                        onChange={(val) => {
+                                            setSelectedSheet(val);
+                                            setShowDatabasePreview(false);
+                                            setCreatedSheet(undefined);
+                                            setCreatedTableName(undefined);
+                                        }}
                                         options={excelSheetsData.map(sheet => ({
                                             label: sheet.sheetName,
                                             value: sheet.sheetName,
@@ -280,7 +313,11 @@ const UploadData = () => {
                                         placeholder="Enter a name of name"
                                         style={{ width: "216px" }}
                                         value={nameOfNameDatabase}
-                                        onChange={(e) => setNameOfNameDatabase(e.target.value)}
+                                        onChange={(e) => {
+                                            setNameOfNameDatabase(e.target.value);
+                                            setShowDatabasePreview(false);
+                                            setCreatedTableName(undefined);
+                                        }}
                                     />
                                 </Flex>
                             </Flex>
@@ -323,7 +360,58 @@ const UploadData = () => {
                         </Flex>
                     </Flex>
                 )}
-                {uploadSuccess && renderPreview()}
+                {/* File preview (Tabs) */}
+                {category === CategoryType.File && uploadSuccess && renderPreview()}
+                {/* Database preview (Table) only after Create */}
+                {category === CategoryType.Database && createdTables.length > 0 && (
+                    <div style={{ marginTop: 24 }}>
+                        {/* Table name tags with close button */}
+                        <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
+                            {createdTables.map((tbl, idx) => (
+                                <Tag
+                                    key={tbl.sheetName + tbl.tableName}
+                                    closable
+                                    onClose={e => {
+                                        e.preventDefault();
+                                        const newTables = createdTables.filter((_, i) => i !== idx);
+                                        setCreatedTables(newTables);
+                                        // If closing the active tag, update preview
+                                        if (activeTableIndex === idx) {
+                                            if (newTables.length === 0) {
+                                                setShowDatabasePreview(false);
+                                                setActiveTableIndex(null);
+                                            } else {
+                                                setActiveTableIndex(0);
+                                            }
+                                        } else if (activeTableIndex && activeTableIndex > idx) {
+                                            setActiveTableIndex(activeTableIndex - 1);
+                                        }
+                                    }}
+                                    style={{ fontSize: 16, padding: '4px 16px', cursor: 'pointer', background: activeTableIndex === idx ? '#e6f7ff' : undefined }}
+                                    onClick={() => {
+                                        setActiveTableIndex(idx);
+                                        setShowDatabasePreview(true);
+                                    }}
+                                >
+                                    {tbl.tableName}
+                                </Tag>
+                            ))}
+                        </div>
+                        {showDatabasePreview && activeTableIndex !== null && createdTables[activeTableIndex] && (
+                            <>
+                                <h3>Preview</h3>
+                                <Table
+                                    columns={excelSheetsData.find(sheet => sheet.sheetName === createdTables[activeTableIndex].sheetName)?.columns || []}
+                                    dataSource={excelSheetsData.find(sheet => sheet.sheetName === createdTables[activeTableIndex].sheetName)?.dataSource || []}
+                                    bordered
+                                    size="small"
+                                    scroll={{ x: 'max-content', y: "calc(100vh - 372px)" }}
+                                    pagination={false}
+                                />
+                            </>
+                        )}
+                    </div>
+                )}
             </Flex>
         </div>
     );
