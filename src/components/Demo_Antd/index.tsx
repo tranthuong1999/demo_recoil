@@ -158,24 +158,15 @@ const UploadData = () => {
         }
     };
 
-    const renderPreview = () => {
-        if (!uploadSuccess || excelSheetsData.length === 0) {
-            return (
-                <Flex gap={8} vertical align="center" justify="center" className="empty-file-message">
-                    <img src="" alt="replace image" />
-                    <p>No file selected yet or failed to load preview. Please select a file to upload it.</p>
-                </Flex>
-            );
-        }
+    const renderPreviewFile = () => {
         return (
             <div>
                 <Flex justify="space-between" align="center">
                     <h3>Preview</h3>
                 </Flex>
-                {category === CategoryType.File ? (<Tabs activeKey={activeSheetKey} onChange={setActiveSheetKey}>
+                <Tabs activeKey={activeSheetKey} onChange={setActiveSheetKey}>
                     {
                         excelSheetsData.map(sheet => {
-                            console.log("sheet:", sheet);
                             return (
                                 <Tabs.TabPane tab={sheet.sheetName} key={sheet.sheetName}>
                                     <Table
@@ -192,25 +183,73 @@ const UploadData = () => {
                             )
                         }
                         )}
-                </Tabs>)
-                    :
-                    (
-                        currentDataSource && nameOfNameDatabase && category === CategoryType.Database &&
-                        <Table
-                            columns={currentDataSource.columns}
-                            dataSource={currentDataSource.dataSource}
-                            bordered
-                            size="small"
-                            // scroll={{ x: 'max-content', y: category === CategoryType.Database ? "calc(100vh - 450px)" : "calc(100vh - 372px)" }}
-                            scroll={{ x: 'max-content', y: "calc(100vh - 372px)" }}
-
-                            pagination={false}
-                        />
-                    )
-                }
+                </Tabs>
             </div>
         );
     };
+
+    const renderPreviewDatabase = () => {
+        return (
+            <div style={{ marginTop: 24 }}>
+                {/* Table name tags with close button */}
+                <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
+                    {createdTables.map((tbl, idx) => (
+                        <Tag
+                            key={tbl.sheetName + tbl.tableName}
+                            closable
+                            onClose={e => {
+                                e.preventDefault();
+                                const newTables = createdTables.filter((_, i) => i !== idx);
+                                setCreatedTables(newTables);
+                                // If closing the active tag, update preview
+                                if (activeTableIndex === idx) {
+                                    if (newTables.length === 0) {
+                                        setShowDatabasePreview(false);
+                                        setActiveTableIndex(null);
+                                    } else {
+                                        setActiveTableIndex(0);
+                                    }
+                                } else if (activeTableIndex && activeTableIndex > idx) {
+                                    setActiveTableIndex(activeTableIndex - 1);
+                                }
+                            }}
+                            style={{ fontSize: 16, padding: '4px 16px', cursor: 'pointer', background: activeTableIndex === idx ? '#e6f7ff' : undefined }}
+                            onClick={() => {
+                                setActiveTableIndex(idx);
+                                setShowDatabasePreview(true);
+                            }}
+                        >
+                            {tbl.tableName}
+                        </Tag>
+                    ))}
+                </div>
+                {showDatabasePreview && activeTableIndex !== null && createdTables[activeTableIndex] && (
+                    <>
+                        <h3>Preview</h3>
+                        <Table
+                            columns={excelSheetsData.find(sheet => sheet.sheetName === createdTables[activeTableIndex].sheetName)?.columns || []}
+                            dataSource={excelSheetsData.find(sheet => sheet.sheetName === createdTables[activeTableIndex].sheetName)?.dataSource || []}
+                            bordered
+                            size="small"
+                            scroll={{ x: 'max-content', y: "calc(100vh - 372px)" }}
+                            pagination={false}
+                        />
+                    </>
+                )}
+            </div>
+        )
+
+    }
+
+    const renderEmptyFileMessage = () => {
+        return (
+            <Flex gap={8} vertical align="center" justify="center" className="empty-file-message" style={{ minHeight: 200 }}>
+                <img src="" alt="replace image" />
+                <p>No file selected yet or failed to load preview. Please select a file to upload it.</p>
+            </Flex>
+        )
+
+    }
 
     const handleCancelUploadFile = () => {
         console.log("Upload cancelled");
@@ -232,7 +271,6 @@ const UploadData = () => {
                             onClick={handleSaveBtnClick}
                             size="large">
                             Save
-                            {/* {t('common.label.save')} */}
                         </Button>
                     }
                 </Flex>
@@ -360,58 +398,9 @@ const UploadData = () => {
                         </Flex>
                     </Flex>
                 )}
-                {/* File preview (Tabs) */}
-                {category === CategoryType.File && uploadSuccess && renderPreview()}
-                {/* Database preview (Table) only after Create */}
-                {category === CategoryType.Database && createdTables.length > 0 && (
-                    <div style={{ marginTop: 24 }}>
-                        {/* Table name tags with close button */}
-                        <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
-                            {createdTables.map((tbl, idx) => (
-                                <Tag
-                                    key={tbl.sheetName + tbl.tableName}
-                                    closable
-                                    onClose={e => {
-                                        e.preventDefault();
-                                        const newTables = createdTables.filter((_, i) => i !== idx);
-                                        setCreatedTables(newTables);
-                                        // If closing the active tag, update preview
-                                        if (activeTableIndex === idx) {
-                                            if (newTables.length === 0) {
-                                                setShowDatabasePreview(false);
-                                                setActiveTableIndex(null);
-                                            } else {
-                                                setActiveTableIndex(0);
-                                            }
-                                        } else if (activeTableIndex && activeTableIndex > idx) {
-                                            setActiveTableIndex(activeTableIndex - 1);
-                                        }
-                                    }}
-                                    style={{ fontSize: 16, padding: '4px 16px', cursor: 'pointer', background: activeTableIndex === idx ? '#e6f7ff' : undefined }}
-                                    onClick={() => {
-                                        setActiveTableIndex(idx);
-                                        setShowDatabasePreview(true);
-                                    }}
-                                >
-                                    {tbl.tableName}
-                                </Tag>
-                            ))}
-                        </div>
-                        {showDatabasePreview && activeTableIndex !== null && createdTables[activeTableIndex] && (
-                            <>
-                                <h3>Preview</h3>
-                                <Table
-                                    columns={excelSheetsData.find(sheet => sheet.sheetName === createdTables[activeTableIndex].sheetName)?.columns || []}
-                                    dataSource={excelSheetsData.find(sheet => sheet.sheetName === createdTables[activeTableIndex].sheetName)?.dataSource || []}
-                                    bordered
-                                    size="small"
-                                    scroll={{ x: 'max-content', y: "calc(100vh - 372px)" }}
-                                    pagination={false}
-                                />
-                            </>
-                        )}
-                    </div>
-                )}
+                {category === CategoryType.File && uploadSuccess && renderPreviewFile()}
+                {category === CategoryType.Database && createdTables.length > 0 && renderPreviewDatabase()}
+                {(!fileName || !uploadSuccess) && renderEmptyFileMessage()}
             </Flex>
         </div>
     );
