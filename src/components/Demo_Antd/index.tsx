@@ -157,6 +157,14 @@ const [activeTableIndex, setActiveTableIndex] = useState<number | null>(null);
         }
     };
 
+    const getTableRowCount = (sheetName: string) => {
+        const sheet = excelSheetsData.find(sheet => sheet.sheetName === sheetName);
+        if (sheet && sheet.data) {
+            return Math.max(sheet.data.length - 1, 0); // subtract header row
+        }
+        return 0;
+    };
+
     const renderPreviewFile = () => {
         return (
             <div>
@@ -203,7 +211,6 @@ const [activeTableIndex, setActiveTableIndex] = useState<number | null>(null);
                                 // If closing the active tag, update preview
                                 if (activeTableIndex === idx) {
                                     if (newTables.length === 0) {
-                                        // setShowDatabasePreview(false);
                                         setActiveTableIndex(null);
                                     } else {
                                         setActiveTableIndex(0);
@@ -217,7 +224,7 @@ const [activeTableIndex, setActiveTableIndex] = useState<number | null>(null);
                                 setActiveTableIndex(idx);
                             }}
                         >
-                            {tbl.tableName}
+                            {tbl.tableName} × (Total row: {getTableRowCount(tbl.sheetName)})
                         </Tag>
                     ))}
                 </div>
