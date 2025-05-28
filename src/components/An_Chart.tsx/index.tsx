@@ -37,21 +37,24 @@ const AnChart: React.FC<AnChartProps> = ({ rowData }) => {
   }), []);
 
   return (
-    <div className="ag-theme-alpine" style={{ height: 500, width: '100%' }}>
+    <div className="ag-theme-alpine" style={{ width: '100%', height: '100%' }}>
       <AgGridReact
         rowData={rowData}
         columnDefs={columnDefs}
-        defaultColDef={defaultColDef}
+        // defaultColDef={defaultColDef}
         pagination={true}
         paginationPageSize={20}
         cacheBlockSize={20}
+        // cacheBlockSize: Used with server-side row models (infinite, viewport). Determines how many rows the grid fetches in each request to the server. A larger block size means fewer requests but more data transferred per request.
         animateRows={true}
         enableCellTextSelection={true}
-        rowModelType="clientSide"
         suppressRowClickSelection={true}
         enableRangeSelection={true}
         rowBuffer={10}
         debounceVerticalScrollbar={true}
+        //  rowModelType='viewport'
+         alwaysShowHorizontalScroll={true}
+         alwaysShowVerticalScroll={true}
       />
     </div>
   );
