@@ -16,22 +16,27 @@ enum CategoryType {
 }
 
 const UploadData = () => {
-    const [category, setCategory] = useState<CategoryType>(CategoryType.File);
-    const [uploading, setUploading] = useState<boolean>(false);
-    const [progress, setProgress] = useState<number>(0);
-    const [excelSheetsData, setExcelSheetsData] = useState<SheetData[]>([]);
-    const [activeSheetKey, setActiveSheetKey] = useState<string | undefined>(undefined);
-    const [fileName, setFileName] = useState<string>("");
-    const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
-    const [selectedSheet, setSelectedSheet] = useState<string | undefined>(undefined);
-    const [nameOfNameDatabase, setNameOfNameDatabase] = useState<string | undefined>(undefined);
-    const [nameOfNameFile, setNameOfNameFile] = useState<string | undefined>(undefined);
-    const [showDatabasePreview, setShowDatabasePreview] = useState<boolean>(false);
-    const [createdSheet, setCreatedSheet] = useState<string | undefined>(undefined);
-    const [createdTableName, setCreatedTableName] = useState<string | undefined>(undefined);
-    const [createdTables, setCreatedTables] = useState<{ sheetName: string, tableName: string }[]>([]);
-    const [activeTableIndex, setActiveTableIndex] = useState<number | null>(null);
-    const currentDataSource = excelSheetsData.find(sheet => sheet.sheetName === selectedSheet)
+    // File upload/progress
+const [uploading, setUploading] = useState(false);
+const [progress, setProgress] = useState(0);
+const [uploadSuccess, setUploadSuccess] = useState(false);
+const [fileName, setFileName] = useState("");
+
+// Excel data
+const [excelSheetsData, setExcelSheetsData] = useState<SheetData[]>([]);
+
+// Category & form
+const [category, setCategory] = useState<CategoryType>(CategoryType.File);
+const [nameOfNameFile, setNameOfNameFile] = useState<string | undefined>(undefined);
+const [nameOfNameDatabase, setNameOfNameDatabase] = useState<string | undefined>(undefined);
+
+// File mode
+const [activeSheetKey, setActiveSheetKey] = useState<string | undefined>(undefined);
+
+// Database mode
+const [selectedSheet, setSelectedSheet] = useState<string | undefined>(undefined);
+const [createdTables, setCreatedTables] = useState<{ sheetName: string, tableName: string }[]>([]);
+const [activeTableIndex, setActiveTableIndex] = useState<number | null>(null);
 
     const handleCategoryChange = (e: any) => {
         setCategory(Number(e.target.value));
@@ -42,11 +47,8 @@ const UploadData = () => {
         setUploadSuccess(false);
         setUploading(false);
         setProgress(0);
-        setShowDatabasePreview(false);
         setSelectedSheet(undefined);
         setNameOfNameDatabase(undefined);
-        setCreatedSheet(undefined);
-        setCreatedTableName(undefined);
         setCreatedTables([]);
         setActiveTableIndex(null);
     };
@@ -58,11 +60,8 @@ const UploadData = () => {
         setUploadSuccess(false);
         setExcelSheetsData([]);
         setActiveSheetKey(undefined);
-        setShowDatabasePreview(false);
         setSelectedSheet(undefined);
         setNameOfNameDatabase(undefined);
-        setCreatedSheet(undefined);
-        setCreatedTableName(undefined);
         setCreatedTables([]);
         setActiveTableIndex(null);
 
@@ -151,7 +150,7 @@ const UploadData = () => {
         if (!exists) {
             setCreatedTables(prev => [...prev, { sheetName: selectedSheet, tableName: nameOfNameDatabase! }]);
             setActiveTableIndex(createdTables.length); // set to new table
-            setShowDatabasePreview(true);
+            // setShowDatabasePreview(true);
         } else {
             // Optionally, show a warning or just do nothing
             // For now, do nothing if duplicate
@@ -204,7 +203,7 @@ const UploadData = () => {
                                 // If closing the active tag, update preview
                                 if (activeTableIndex === idx) {
                                     if (newTables.length === 0) {
-                                        setShowDatabasePreview(false);
+                                        // setShowDatabasePreview(false);
                                         setActiveTableIndex(null);
                                     } else {
                                         setActiveTableIndex(0);
@@ -216,14 +215,13 @@ const UploadData = () => {
                             style={{ fontSize: 16, padding: '4px 16px', cursor: 'pointer', background: activeTableIndex === idx ? '#e6f7ff' : undefined }}
                             onClick={() => {
                                 setActiveTableIndex(idx);
-                                setShowDatabasePreview(true);
                             }}
                         >
                             {tbl.tableName}
                         </Tag>
                     ))}
                 </div>
-                {showDatabasePreview && activeTableIndex !== null && createdTables[activeTableIndex] && (
+                {activeTableIndex !== null && createdTables[activeTableIndex] && (
                     <>
                         <h3>Preview</h3>
                         <Table
@@ -335,9 +333,6 @@ const UploadData = () => {
                                         value={selectedSheet}
                                         onChange={(val) => {
                                             setSelectedSheet(val);
-                                            setShowDatabasePreview(false);
-                                            setCreatedSheet(undefined);
-                                            setCreatedTableName(undefined);
                                         }}
                                         options={excelSheetsData.map(sheet => ({
                                             label: sheet.sheetName,
@@ -353,8 +348,6 @@ const UploadData = () => {
                                         value={nameOfNameDatabase}
                                         onChange={(e) => {
                                             setNameOfNameDatabase(e.target.value);
-                                            setShowDatabasePreview(false);
-                                            setCreatedTableName(undefined);
                                         }}
                                     />
                                 </Flex>
